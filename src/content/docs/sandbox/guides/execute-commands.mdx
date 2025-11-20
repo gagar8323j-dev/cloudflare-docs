@@ -133,6 +133,66 @@ await sandbox.exec('python /workspace/analyze.py data.csv');
 ```
 </TypeScriptExample>
 
+## Use per-command environment variables
+
+Set environment variables for a single command without affecting the session:
+
+<TypeScriptExample>
+```
+// Environment variables scoped to this command only
+const result = await sandbox.exec('echo $API_KEY', {
+  env: { API_KEY: 'secret-key-123' }
+});
+
+console.log(result.stdout); // "secret-key-123"
+
+// Next command does not have API_KEY
+const verify = await sandbox.exec('echo $API_KEY');
+console.log(verify.stdout); // "" (empty)
+```
+</TypeScriptExample>
+
+Per-command environment variables:
+- Do not persist in the session
+- Override session-level variables if both are set
+- Are isolated from other concurrent commands
+- Are cleaned up automatically after the command completes
+
+## Override working directory
+
+Override the working directory for a single command:
+
+<TypeScriptExample>
+```
+// Execute in a specific directory
+const result = await sandbox.exec('pwd', {
+  cwd: '/workspace/my-project'
+});
+
+console.log(result.stdout); // "/workspace/my-project"
+
+// Session working directory unchanged
+const verify = await sandbox.exec('pwd');
+console.log(verify.stdout); // "/workspace" (default)
+```
+</TypeScriptExample>
+
+Combining `cwd` and `env` for complex workflows:
+
+<TypeScriptExample>
+```
+// Run tests in a specific directory with custom environment
+await sandbox.exec('npm test', {
+  cwd: '/workspace/api',
+  env: {
+    NODE_ENV: 'test',
+    DATABASE_URL: 'sqlite::memory:',
+    LOG_LEVEL: 'debug'
+  }
+});
+```
+</TypeScriptExample>
+
 ## Best practices
 
 - **Check exit codes** - Always verify `result.success` and `result.exitCode`
@@ -158,14 +218,19 @@ if (!check.success) {
 
 ### Working directory issues
 
-Use absolute paths or change directory:
+Use the `cwd` option for cleaner code, or use absolute paths:
 
 <TypeScriptExample>
 ```
-// Use absolute path
+// Best: Use cwd option
+await sandbox.exec('python script.py', {
+  cwd: '/workspace/my-app'
+});
+
+// Alternative: Use absolute path
 await sandbox.exec('python /workspace/my-app/script.py');
 
-// Or change directory
+// Alternative: Change directory inline
 await sandbox.exec('cd /workspace/my-app && python script.py');
 ```
 </TypeScriptExample>

@@ -32,13 +32,21 @@ await sandbox.exec("python seed.py"); // Has DATABASE_URL and API_KEY
 
 ### 2. Per-command with exec() options
 
-Pass environment variables for a specific command:
+Pass environment variables for a specific command without affecting the session:
 
 ```typescript
 await sandbox.exec("node app.js", {
 	env: {
 		NODE_ENV: "production",
 		PORT: "3000",
+	},
+});
+
+// Works with execStream() too
+const stream = await sandbox.execStream("npm run build", {
+	env: {
+		CI: "true",
+		NODE_ENV: "production",
 	},
 });
 
@@ -49,6 +57,8 @@ await sandbox.startProcess("python server.py", {
 	},
 });
 ```
+
+Per-command environment variables are scoped to that command only and do not persist in the session. They are automatically cleaned up when the command completes.
 
 **Use when:** You need different environment variables for different commands, or want to override sandbox-level variables.
 
